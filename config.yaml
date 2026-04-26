@@ -1,0 +1,40 @@
+device: null  # null => auto ("cuda" if available else "cpu")
+
+# Deployment
+deployment_mode: "canary"  # "stable" | "canary"
+canary_ratio: 0.1
+canary_checkpoint: null  # set to models/vN/best.pt to canary-test a new student
+
+# Shadow evaluation (silent)
+enable_shadow_teacher: true
+shadow_sample_rate: 0.3
+shadow_models: []  # list of extra student checkpoints to run silently
+
+# Student model
+student_checkpoint: distilled_model/best.pt
+confidence_threshold: 0.6
+tie_threshold: 0.02
+
+# API behavior
+enable_teacher: true
+hybrid_combine: false
+hybrid_student_weight: 0.7
+hybrid_teacher_weight: 0.3
+
+# Image I/O
+cache_dir: .cache/api_images
+url_timeout_sec: 10
+max_download_mb: 20
+
+# Teacher pipeline options
+teacher:
+  teacher_threshold: 0.05
+  model_name: ImageReward-v1.0
+  download_root: null
+  med_config: null
+  aesthetic_weights: null
+  use_vlm: true
+  enable_vlm: true
+  vlm_sample_rate: 0.2
+  vlm_runs: 3
+  vlm_max_new_tokens: 192
