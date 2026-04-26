@@ -1,6 +1,8 @@
 # VLMJudge
 ### A Multimodal Evaluation and Reasoning Framework for Image Preference Learning
 
+![VLMJudge Banner](assets/images/banner.png)
+
 ## 1. Overview
 
 VLMJudge is a production-grade multimodal evaluation framework designed for **image comparison, ranking, and preference learning**. It combines fast similarity-based scoring with deep vision-language reasoning to produce accurate, calibrated, and explainable judgments.
@@ -32,13 +34,21 @@ The system is structured as a multi-stage evaluation pipeline that balances **la
 
 ### High-Level Architecture
 
-![System Architecture](output/architeacture.png)
+![System Architecture](assets/images/architecture.png)
 
 ---
 
-## 4. Core Components
+## 4. Pipeline Demonstration
 
-### 4.1 Student Model (Fast Path)
+Below is a sample output from the evaluation pipeline, showcasing the visual comparison and the reasoning provided by the VLM ensemble.
+
+![Evaluation Sample](assets/images/compare_sample.png)
+
+---
+
+## 5. Core Components
+
+### 5.1 Student Model (Fast Path)
 
 A distilled CLIP-based model provides fast inference (~50 ms) for the majority of requests.
 It is optimized for:
@@ -49,7 +59,7 @@ It is optimized for:
 
 ---
 
-### 4.2 Teacher System (Multi-VLM Ensemble)
+### 5.2 Teacher System (Multi-VLM Ensemble)
 
 The teacher system consists of multiple vision-language models (e.g., Qwen2.5-VL) that:
 
@@ -65,7 +75,7 @@ This layer is activated for:
 
 ---
 
-### 4.3 Symbolic Scoring Layer
+### 5.3 Symbolic Scoring Layer
 
 Includes independent scorers such as:
 
@@ -78,7 +88,7 @@ These signals provide complementary structure to neural reasoning.
 
 ---
 
-### 4.4 Aggregation and Calibration
+### 5.4 Aggregation and Calibration
 
 All signals are combined through a hybrid aggregation layer that:
 
@@ -90,7 +100,7 @@ Final outputs are calibrated to produce reliable probabilities.
 
 ---
 
-### 4.5 Reasoning Engine
+### 5.5 Reasoning Engine
 
 The system extracts and processes reasoning from VLMs:
 
@@ -101,7 +111,7 @@ The system extracts and processes reasoning from VLMs:
 
 ---
 
-### 4.6 Continuous Learning Pipeline
+### 5.6 Continuous Learning Pipeline
 
 The system improves over time via:
 
@@ -113,12 +123,11 @@ The system improves over time via:
 
 ---
 
-## 5. Execution Flow
+## 6. Execution Flow
 
 1. User submits prompt and images
 2. Student model generates initial prediction
 3. If confidence is low or disagreement is detected:
-
    * Request is routed to VLM ensemble
 4. All signals are aggregated and calibrated
 5. Final decision and reasoning are returned
@@ -126,7 +135,7 @@ The system improves over time via:
 
 ---
 
-## 6. Performance Characteristics
+## 7. Performance Characteristics
 
 | Metric                      | Student Model | VLM Ensemble | Hybrid System |
 | --------------------------- | ------------- | ------------ | ------------- |
@@ -137,7 +146,7 @@ The system improves over time via:
 
 ---
 
-## 7. Installation
+## 8. Installation
 
 ```bash
 pip install -r requirements.txt
@@ -145,7 +154,7 @@ pip install -r requirements.txt
 
 ---
 
-## 8. Running the API
+## 9. Running the API
 
 ```bash
 python run_api.py --host 0.0.0.0 --port 8000
@@ -153,7 +162,7 @@ python run_api.py --host 0.0.0.0 --port 8000
 
 ---
 
-## 9. API Endpoints
+## 10. API Endpoints
 
 | Endpoint            | Description                              |
 | ------------------- | ---------------------------------------- |
@@ -166,7 +175,7 @@ python run_api.py --host 0.0.0.0 --port 8000
 
 ---
 
-## 10. Example Output
+## 11. Example Output
 
 ```json
 {
@@ -176,22 +185,6 @@ python run_api.py --host 0.0.0.0 --port 8000
   "reasoning_full": "Image A demonstrates stronger semantic alignment and composition..."
 }
 ```
-
----
-
-## 11. Benchmarking
-
-Run:
-
-```bash
-python benchmark.py --dataset data/preferences.json --student-checkpoint model.pt
-```
-
-Outputs include:
-
-* Accuracy and calibration metrics
-* Reasoning quality metrics
-* Model leaderboard
 
 ---
 
@@ -215,36 +208,6 @@ logs/
 
 ---
 
-## 13. Research Applications
-
-* Reward modeling for RLHF and post-training
-* Multimodal preference dataset generation
-* Evaluation of generative image models
-* Explainable AI for vision-language systems
-
----
-
-## 14. License
+## 13. License
 
 Apache License 2.0
-
----
-
-# 🧠 What this version improves
-
-### ✔ Professional tone
-- No emojis  
-- Formal language  
-- Suitable for research + industry  
-
-### ✔ Clear architecture
-- Logical flow  
-- Component separation  
-- Easy to understand pipeline  
-
-### ✔ Better readability
-- Sectioned  
-- Scannable  
-- GitHub-friendly  
-
----
