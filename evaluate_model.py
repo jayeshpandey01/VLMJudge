@@ -25,11 +25,19 @@ def _load_split_indices(output_dir: Optional[str]) -> Optional[Tuple[List[int], 
         obj = json.loads(p.read_text(encoding="utf-8"))
         train_idx = obj.get("train_idx", None)
         val_idx = obj.get("val_idx", None)
-        if isinstance(train_idx, list) and isinstance(val_idx, list):
-            return train_idx, val_idx
-    except Exception:
+        
+        # Both train_idx and val_idx must be present and be lists
+        if not isinstance(train_idx, list):
+            return None
+        if not isinstance(val_idx, list):
+            return None
+        
+        return train_idx, val_idx
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to load split indices from {p}: {e}")
         return None
-    return None
 
 
 def _load_checkpoint(model: DistilledRewardModel, checkpoint_path: str, device: str) -> None:

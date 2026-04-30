@@ -120,6 +120,8 @@ def create_app(*, config_path: str = "config.yaml") -> FastAPI:
     @app.post("/compare")
     async def compare(req: CompareRequest):
         rt: InferenceRuntime = runtime_holder["runtime"]
+        if rt is None:
+            raise HTTPException(status_code=503, detail="Service initializing. Please retry after startup completes.")
         try:
             out = rt.compare(prompt=req.prompt, image_a_ref=req.imageA, image_b_ref=req.imageB, return_debug=True)
             dbg = out.pop("_debug", {}) if isinstance(out, dict) else {}
@@ -157,6 +159,8 @@ def create_app(*, config_path: str = "config.yaml") -> FastAPI:
     @app.post("/score")
     async def score(req: ScoreRequest):
         rt: InferenceRuntime = runtime_holder["runtime"]
+        if rt is None:
+            raise HTTPException(status_code=503, detail="Service initializing. Please retry after startup completes.")
         try:
             out = rt.score(prompt=req.prompt, image_ref=req.image)
             dbg = out.pop("_debug", {}) if isinstance(out, dict) else {}
@@ -174,7 +178,7 @@ def create_app(*, config_path: str = "config.yaml") -> FastAPI:
                     "student_variant": dbg.get("student_variant", None),
                 },
             )
-            return {"score": out["score"], "confidence": out["confidence"]}
+            return {"score": out.get("score", 0.5), "confidence": out.get("confidence", 0.0)}
         except FileNotFoundError as e:
             raise HTTPException(status_code=400, detail=str(e))
         except ValueError as e:
@@ -183,6 +187,8 @@ def create_app(*, config_path: str = "config.yaml") -> FastAPI:
     @app.post("/batch_compare")
     async def batch_compare(req: List[BatchCompareItem]):
         rt: InferenceRuntime = runtime_holder["runtime"]
+        if rt is None:
+            raise HTTPException(status_code=503, detail="Service initializing. Please retry after startup completes.")
         outs = []
         for i, item in enumerate(req):
             try:
@@ -216,6 +222,8 @@ def create_app(*, config_path: str = "config.yaml") -> FastAPI:
     @app.post("/explain")
     async def explain(req: ExplainRequest):
         rt: InferenceRuntime = runtime_holder["runtime"]
+        if rt is None:
+            raise HTTPException(status_code=503, detail="Service initializing. Please retry after startup completes.")
         try:
             # Bypass scoring pipeline and directly use VLM ensemble if available.
             # If we don't expose VLM directly from runtime, we can just run the pipeline
@@ -245,6 +253,8 @@ def create_app(*, config_path: str = "config.yaml") -> FastAPI:
     @app.post("/feedback")
     async def feedback(req: FeedbackRequest):
         rt: InferenceRuntime = runtime_holder["runtime"]
+        if rt is None:
+            raise HTTPException(status_code=503, detail="Service initializing. Please retry after startup completes.")
         flagged = False
         model_conf = None
         model_winner = None

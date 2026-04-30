@@ -42,8 +42,15 @@ class PreferenceDataset(Dataset):
         self.preprocess = preprocess
         self._disagreements: List[Dict[str, Any]] = []
         
-        from vlmjudge.scorers.reasoning_score import ReasoningScorer
-        self.reasoning_scorer = ReasoningScorer()
+        # Try to load ReasoningScorer for VLM reasoning weighting
+        self.reasoning_scorer = None
+        try:
+            from vlmjudge.scorers.reasoning_score import ReasoningScorer
+            self.reasoning_scorer = ReasoningScorer()
+        except ImportError as e:
+            logger.warning(f"ReasoningScorer not available: {e}. Disabling reasoning-weighted loss.")
+        except Exception as e:
+            logger.warning(f"Failed to initialize ReasoningScorer: {e}. Disabling reasoning-weighted loss.")
         
         for item in raw_data:
             quality = item.get("quality", "low").lower()
@@ -72,7 +79,7 @@ class PreferenceDataset(Dataset):
             vlm_data = item.get("vlm", {})
             vlm_reason = vlm_data.get("reason", "")
             reasoning_score = 1.0
-            if vlm_reason:
+            if vlm_reason and self.reasoning_scorer is not None:
                 reasoning_score = self.reasoning_scorer.score_reasoning(vlm_reason)
                 
             # Distillation v2: reasoning-weighted loss
@@ -133,8 +140,9 @@ class PreferenceDataset(Dataset):
         if log_disagreements_path and self._disagreements:
             try:
                 os.makedirs(os.path.dirname(log_disagreements_path), exist_ok=True)
-            except Exception:
-                pass
+            except OSError as e:
+                logger.warning(f"Failed to create disagreements log directory: {e}. Skipping disagreement logging.")
+                return
             try:
                 with open(log_disagreements_path, "w", encoding="utf-8") as f:
                     for row in self._disagreements:

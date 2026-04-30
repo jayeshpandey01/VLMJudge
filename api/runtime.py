@@ -263,14 +263,24 @@ def resolve_image(
             return Image.open(str(target)).convert("RGB")
 
         req = urllib.request.Request(ref, headers={"User-Agent": "ImageReward-API/1.0"})
-        with urllib.request.urlopen(req, timeout=int(url_timeout_sec)) as resp:
-            data = resp.read(int(max_download_mb) * 1024 * 1024 + 1)
-            if len(data) > int(max_download_mb) * 1024 * 1024:
-                raise ValueError(f"download too large (> {max_download_mb} MB)")
-            try:
-                img = Image.open(io.BytesIO(data)).convert("RGB")
-            except Exception as e:
-                raise ValueError("failed to decode downloaded image") from e
+        try:
+            # timeout applies to both connection and read operations
+            timeout_sec = int(url_timeout_sec)
+            max_bytes = int(max_download_mb) * 1024 * 1024
+            with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
+                # Read with explicit size limit to prevent resource exhaustion
+                data = resp.read(max_bytes + 1)
+                if len(data) > max_bytes:
+                    raise ValueError(f"download too large (> {max_download_mb} MB)")
+        except urllib.error.URLError as e:
+            raise ValueError(f"failed to download image: {e}") from e
+        except Exception as e:
+            raise ValueError(f"failed to download image: {e}") from e
+        
+        try:
+            img = Image.open(io.BytesIO(data)).convert("RGB")
+        except Exception as e:
+            raise ValueError("failed to decode downloaded image") from e
 
         try:
             target.write_bytes(data)
@@ -316,17 +326,24 @@ class StudentEngine:
 
     def _encode_text_cached(self, prompt: str) -> torch.Tensor:
         key = prompt.strip()
+        # Check cache first
         with self._prompt_cache_lock:
             hit = self._prompt_cache.get(key)
             if hit is not None:
                 self._prompt_cache.move_to_end(key)
                 return hit
 
-        tokens = self.model.tokenizer([key]).to(self.device)
-        with torch.no_grad():
-            tf = self.model.clip.encode_text(tokens)
-            tf = F.normalize(tf, dim=-1)
+        # Encode text (outside lock to avoid blocking)
+        try:
+            tokens = self.model.tokenizer([key]).to(self.device)
+            with torch.no_grad():
+                tf = self.model.clip.encode_text(tokens)
+                tf = F.normalize(tf, dim=-1)
+        except Exception as e:
+            logger.error(f"Failed to encode text prompt: {e}")
+            raise
 
+        # Update cache (with lock)
         with self._prompt_cache_lock:
             self._prompt_cache[key] = tf
             self._prompt_cache.move_to_end(key)
@@ -437,6 +454,11 @@ class InferenceRuntime:
         cfg_dir = Path(path).resolve().parent
         device = _device_from_config(cfg)
         student_checkpoint = str(_get(cfg, "student_checkpoint", "distilled_model/best.pt")).strip()
+        
+        # Validate student_checkpoint configuration
+        if not student_checkpoint:
+            logger.warning("WARN: student_checkpoint not configured in config.yaml. Using teacher-only mode. This may degrade performance.")
+        
         student_checkpoint_resolved = _resolve_path(student_checkpoint, base_dir=cfg_dir)
         tie_threshold = float(_get(cfg, "tie_threshold", 0.02))
         if student_checkpoint and Path(student_checkpoint).exists():
@@ -448,8 +470,8 @@ class InferenceRuntime:
                 checkpoint_path=student_checkpoint_resolved, device=device, tie_threshold=tie_threshold
             )
         else:
-            logger.error(
-                "event=student_checkpoint_missing checkpoint=%s resolved=%s",
+            logger.warning(
+                "WARN: student checkpoint not found: %s (resolved: %s). Falling back to teacher-only mode. Set `student_checkpoint` in config.yaml to use the student model.",
                 student_checkpoint,
                 student_checkpoint_resolved,
             )

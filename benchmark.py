@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import logging
 import os
 import time
 import random
@@ -18,6 +19,8 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
+
+logger = logging.getLogger(__name__)
 
 from vlmjudge.bench.advanced import (
     bootstrap_mean,
@@ -112,7 +115,11 @@ class PairwisePathDataset(Dataset):
         try:
             pil = Image.open(path).convert("RGB")
             return self._preprocess(pil)
-        except Exception:
+        except (FileNotFoundError, IOError, OSError) as e:
+            logger.warning(f"Failed to load image {path}: {e}")
+            return torch.zeros(3, 224, 224)
+        except Exception as e:
+            logger.warning(f"Unexpected error loading image {path}: {e}")
             return torch.zeros(3, 224, 224)
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
@@ -226,7 +233,8 @@ class _ImageRewardRaw:
         self._model = None
         try:
             import ImageReward as RM
-        except Exception:
+        except ImportError:
+            logger.warning("ImageReward module not available")
             self._model = None
             return
 
@@ -236,7 +244,8 @@ class _ImageRewardRaw:
                 self._model = RM.load(model_name, **kwargs)
             else:
                 self._model = RM.load(model_name, device=device, **kwargs)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to load ImageReward model: {e}")
             self._model = None
 
     def score_raw(self, prompt: str, image: str) -> Optional[float]:
@@ -244,7 +253,11 @@ class _ImageRewardRaw:
             return None
         try:
             return float(self._model.score(prompt, image))
-        except Exception:
+        except (ValueError, RuntimeError, TypeError) as e:
+            logger.warning(f"Failed to score with ImageReward: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"Unexpected error in ImageReward scoring: {e}")
             return None
 
 
@@ -308,13 +321,15 @@ def eval_teacher(items: Sequence[Mapping[str, Any]], *, pipeline: ComparePipelin
         margin = 0.0
         try:
             margin = float(out.get("structured", {}).get("delta", 0.0))
-        except Exception:
+        except (ValueError, TypeError) as e:
+            logger.debug(f"Failed to extract margin from structured output: {e}")
             margin = 0.0
         try:
             agg = out.get("structured", {}).get("aggregate", {})
             scores_chosen.append(float(agg.get("A", {}).get("score", 0.5)))
             scores_rejected.append(float(agg.get("B", {}).get("score", 0.5)))
-        except Exception:
+        except (ValueError, TypeError, KeyError) as e:
+            logger.debug(f"Failed to extract scores from structured output: {e}")
             scores_chosen.append(0.5)
             scores_rejected.append(0.5)
         margins.append(float(margin))
@@ -360,8 +375,8 @@ def eval_teacher(items: Sequence[Mapping[str, Any]], *, pipeline: ComparePipelin
                 "reasoning_consistency_rate": extra["reasoning_consistency_rate"],
                 "vlm_used_count": extra["vlm_used_count"]
             }, f, indent=2)
-    except Exception:
-        pass
+    except (IOError, OSError) as e:
+        logger.warning(f"Failed to write reasoning report: {e}")
 
     return SystemResult("teacher", scores_chosen, scores_rejected, margins, confidences, correct, ms_total), outputs, extra
 

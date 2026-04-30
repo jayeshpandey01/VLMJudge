@@ -100,7 +100,7 @@ class ImageReward(nn.Module):
 
     def score(self, prompt, image):
         
-        if (type(image).__name__=='list'):
+        if isinstance(image, list):
             _, rewards = self.inference_rank(prompt, image)
             return rewards
             
@@ -111,7 +111,9 @@ class ImageReward(nn.Module):
         if isinstance(image, Image.Image):
             pil_image = image
         elif isinstance(image, str) and os.path.isfile(image):
-            pil_image = Image.open(image)
+            # Load image and immediately convert to RGB to release file handle
+            with Image.open(image) as img:
+                pil_image = img.convert("RGB")
         else:
             raise TypeError(r'This image parameter type has not been supportted yet. Please pass PIL.Image or file path str.')
             
@@ -145,7 +147,11 @@ class ImageReward(nn.Module):
                 pil_image = generation
             elif isinstance(generation, str):
                 if os.path.isfile(generation):
-                    pil_image = Image.open(generation)
+                    # Load image and immediately convert to RGB to release file handle
+                    with Image.open(generation) as img:
+                        pil_image = img.convert("RGB")
+                else:
+                    raise FileNotFoundError(f"Image file not found: {generation}")
             else:
                 raise TypeError(r'This image parameter type has not been supportted yet. Please pass PIL.Image or file path str.')
             image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
