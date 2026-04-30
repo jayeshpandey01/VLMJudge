@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Source file for image_reward.py in the sdwebui module.
+
 import os
 import subprocess
 import sys

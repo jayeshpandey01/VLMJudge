@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Comparator interfaces.
+
 """
 Comparator interfaces.
 

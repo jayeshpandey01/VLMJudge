@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Simple API test client to verify /score and /compare endpoints.
+"""
+
 import argparse
 import json
 import urllib.request

@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Comprehensive benchmarking script for reward models, handling student/teacher evaluation, metrics, and plotting.
+"""
+
 from __future__ import annotations
 
 import argparse

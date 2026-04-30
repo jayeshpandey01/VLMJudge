@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Entrypoint for running the FastAPI server using Uvicorn.
+"""
+
 import argparse
 import logging
 

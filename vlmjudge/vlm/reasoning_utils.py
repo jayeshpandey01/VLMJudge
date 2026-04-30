@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Reasoning Compression Utility.
+
 """
 Reasoning Compression Utility.
 """

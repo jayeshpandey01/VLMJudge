@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Test runner script that discovers and executes all tests in the tests/ directory.
+"""
+
 from __future__ import annotations
 
 import importlib

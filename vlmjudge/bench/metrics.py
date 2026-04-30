@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Standard ECE with uniform bins over [0,1].
+
 from __future__ import annotations
 
 from dataclasses import dataclass

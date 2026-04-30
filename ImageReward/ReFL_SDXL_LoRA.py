@@ -1,11 +1,7 @@
-'''
-@File       :   ReFL_SDXL_LoRA.py
-@Description:   ReFL training by using StableDiffusionXLPipeline and adapting LoRA.
-* Based on diffusers code base
-* https://github.com/huggingface/diffusers/blob/main/examples/text_to_image/train_text_to_image_lora_sdxl.py
-'''
-
-"""Fine-tuning script for Stable Diffusion XL for text2image with support for LoRA."""
+"""
+author: Jayesh Pandey
+summary: Fine-tuning script for Stable Diffusion XL (SDXL) using the ReFL algorithm with LoRA support for efficient training.
+"""
 
 import argparse
 from contextlib import nullcontext

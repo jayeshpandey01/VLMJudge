@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Merge two preference datasets, avoiding exact duplicates on (prompt,chosen,rejected).
+
 from __future__ import annotations
 
 import hashlib

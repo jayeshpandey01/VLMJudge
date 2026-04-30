@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Source file for plotting.py in the bench module.
+
 from __future__ import annotations
 
 from pathlib import Path

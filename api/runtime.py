@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Inference runtime handling model loading, image resolution, and hybrid scoring/comparison logic.
+"""
+
 from __future__ import annotations
 
 import hashlib
@@ -6,6 +11,7 @@ import logging
 import os
 import threading
 import time
+import base64
 import urllib.request
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -32,6 +38,81 @@ from train_reward_model import DistilledRewardModel
 
 logger = logging.getLogger(__name__)
 _SHADOW_LOCK = threading.Lock()
+
+
+def _resolve_path(path_str: str, *, base_dir: Path) -> str:
+    """
+    Resolve a potentially-relative path against a base directory.
+
+    We do this so configs can use relative paths regardless of the process CWD.
+    """
+    if not isinstance(path_str, str) or not path_str.strip():
+        return path_str
+    p = Path(path_str.strip())
+    if p.is_absolute():
+        return str(p)
+    return str((base_dir / p).resolve())
+
+
+class MissingStudentEngine:
+    """
+    Placeholder engine used when the student checkpoint is missing.
+
+    This keeps the API running (e.g. teacher-only mode) instead of crashing on startup.
+    """
+
+    def __init__(self, *, checkpoint_path: str, resolved_path: str) -> None:
+        self.checkpoint_path = str(checkpoint_path)
+        self.resolved_path = str(resolved_path)
+
+    def _err(self) -> FileNotFoundError:
+        return FileNotFoundError(
+            f"student checkpoint not found: {self.checkpoint_path} (resolved: {self.resolved_path}). "
+            "Set `student_checkpoint` in config.yaml to an existing .pt file or train/export one to that path."
+        )
+
+    def score(self, pil: Image.Image, prompt: str) -> Tuple[float, float]:
+        raise self._err()
+
+    def compare(self, pil_a: Image.Image, pil_b: Image.Image, prompt: str) -> Tuple[float, float, float, str]:
+        raise self._err()
+
+
+def _coerce_teacher_winner_and_confidence(
+    *,
+    score_a: float,
+    score_b: float,
+    winner: str,
+    confidence: float,
+    tie_threshold: float,
+) -> Tuple[str, float]:
+    """
+    Teacher pipeline may return "tie" with a very small calibrated confidence even when
+    aggregate scores slightly differ. For UI friendliness, promote ties to A/B when the
+    aggregate delta exceeds the runtime tie_threshold, and ensure confidence is at least
+    the absolute score delta.
+
+    This keeps VLM-driven A/B decisions intact (we only override ties).
+    """
+    derived_winner = _winner_from_scores(score_a, score_b, tie_threshold)
+    derived_conf = float(clamp(abs(float(score_a) - float(score_b)), 0.0, 1.0))
+
+    out_winner = str(winner)
+    if out_winner == "tie" and derived_winner != "tie":
+        logger.info(
+            "event=teacher_tie_promoted scoreA=%.4f scoreB=%.4f tie_threshold=%.4f -> %s",
+            float(score_a),
+            float(score_b),
+            float(tie_threshold),
+            derived_winner,
+        )
+        out_winner = derived_winner
+
+    out_conf = float(clamp(float(confidence), 0.0, 1.0))
+    if derived_conf > out_conf:
+        out_conf = derived_conf
+
+    return out_winner, out_conf
 
 
 def _append_jsonl(path: str, obj: Dict[str, Any]) -> None:
@@ -145,11 +226,35 @@ def resolve_image(
     Supports:
       - local file paths
       - http(s) URLs (downloaded + cached)
+      - data URLs (base64-encoded images)
     """
     if not isinstance(image_ref, str) or not image_ref.strip():
         raise ValueError("image reference must be a non-empty string")
 
     ref = image_ref.strip()
+    if ref.startswith("data:"):
+        # Minimal RFC 2397 support: only base64-encoded payloads.
+        try:
+            header, payload = ref.split(",", 1)
+        except ValueError as e:
+            raise ValueError("invalid data URL") from e
+
+        if ";base64" not in header.lower():
+            raise ValueError("unsupported data URL (expected base64)")
+
+        try:
+            raw = base64.b64decode(payload.encode("utf-8"), validate=False)
+        except Exception as e:
+            raise ValueError("failed to decode base64 data URL") from e
+
+        if len(raw) > int(max_download_mb) * 1024 * 1024:
+            raise ValueError(f"data URL too large (> {max_download_mb} MB)")
+
+        try:
+            return Image.open(io.BytesIO(raw)).convert("RGB")
+        except Exception as e:
+            raise ValueError("failed to decode data URL image") from e
+
     if ref.startswith("http://") or ref.startswith("https://"):
         Path(cache_dir).mkdir(parents=True, exist_ok=True)
         key = _sha256(ref)
@@ -321,34 +426,59 @@ class TeacherEngine:
 class InferenceRuntime:
     cfg: Dict[str, Any]
     device: str
-    student_stable: StudentEngine
-    student_canary: Optional[StudentEngine]
-    shadow_students: List[Tuple[str, StudentEngine]] = field(default_factory=list)
+    student_stable: Any
+    student_canary: Optional[Any]
+    shadow_students: List[Tuple[str, Any]] = field(default_factory=list)
     teacher: Optional[TeacherEngine] = None
 
     @classmethod
     def from_yaml(cls, path: str) -> "InferenceRuntime":
         cfg = _load_yaml(path)
+        cfg_dir = Path(path).resolve().parent
         device = _device_from_config(cfg)
-        student_checkpoint = str(_get(cfg, "student_checkpoint", "distilled_model/best.pt"))
+        student_checkpoint = str(_get(cfg, "student_checkpoint", "distilled_model/best.pt")).strip()
+        student_checkpoint_resolved = _resolve_path(student_checkpoint, base_dir=cfg_dir)
         tie_threshold = float(_get(cfg, "tie_threshold", 0.02))
-        student_stable = StudentEngine.load(checkpoint_path=student_checkpoint, device=device, tie_threshold=tie_threshold)
+        if student_checkpoint and Path(student_checkpoint).exists():
+            student_stable = StudentEngine.load(
+                checkpoint_path=student_checkpoint, device=device, tie_threshold=tie_threshold
+            )
+        elif student_checkpoint_resolved and Path(student_checkpoint_resolved).exists():
+            student_stable = StudentEngine.load(
+                checkpoint_path=student_checkpoint_resolved, device=device, tie_threshold=tie_threshold
+            )
+        else:
+            logger.error(
+                "event=student_checkpoint_missing checkpoint=%s resolved=%s",
+                student_checkpoint,
+                student_checkpoint_resolved,
+            )
+            student_stable = MissingStudentEngine(
+                checkpoint_path=student_checkpoint, resolved_path=student_checkpoint_resolved
+            )
 
         student_canary = None
         deployment_mode = str(_get(cfg, "deployment_mode", "stable")).lower()
         canary_checkpoint = cfg.get("canary_checkpoint", None)
         if deployment_mode == "canary" and isinstance(canary_checkpoint, str) and canary_checkpoint.strip():
             try:
-                if Path(canary_checkpoint).exists():
+                canary_ck = str(canary_checkpoint).strip()
+                canary_resolved = _resolve_path(canary_ck, base_dir=cfg_dir)
+                load_path = None
+                if canary_ck and Path(canary_ck).exists():
+                    load_path = canary_ck
+                elif canary_resolved and Path(canary_resolved).exists():
+                    load_path = canary_resolved
+                if load_path is not None:
                     student_canary = StudentEngine.load(
-                        checkpoint_path=str(canary_checkpoint).strip(), device=device, tie_threshold=tie_threshold
+                        checkpoint_path=load_path, device=device, tie_threshold=tie_threshold
                     )
                     logger.info("event=canary_loaded checkpoint=%s", str(canary_checkpoint))
             except Exception as e:
                 logger.warning("event=canary_load_failed err=%s", e)
                 student_canary = None
 
-        shadow_students: List[Tuple[str, StudentEngine]] = []
+        shadow_students: List[Tuple[str, Any]] = []
         shadow_models = cfg.get("shadow_models", [])
         if isinstance(shadow_models, list):
             for p in shadow_models[:5]:
@@ -356,8 +486,16 @@ class InferenceRuntime:
                     continue
                 ck = str(p).strip()
                 try:
-                    if Path(ck).exists():
-                        shadow_students.append((ck, StudentEngine.load(checkpoint_path=ck, device=device, tie_threshold=tie_threshold)))
+                    ck_resolved = _resolve_path(ck, base_dir=cfg_dir)
+                    load_path = None
+                    if ck and Path(ck).exists():
+                        load_path = ck
+                    elif ck_resolved and Path(ck_resolved).exists():
+                        load_path = ck_resolved
+                    if load_path is not None:
+                        shadow_students.append(
+                            (ck, StudentEngine.load(checkpoint_path=load_path, device=device, tie_threshold=tie_threshold))
+                        )
                         logger.info("event=shadow_model_loaded checkpoint=%s", ck)
                 except Exception as e:
                     logger.warning("event=shadow_model_load_failed checkpoint=%s err=%s", ck, e)
@@ -439,6 +577,71 @@ class InferenceRuntime:
         if student_variant == "canary":
             student_checkpoint = str(self.cfg.get("canary_checkpoint", student_checkpoint))
 
+        # If the student checkpoint is missing, don't throw/log on every request.
+        # Serve using the teacher (if enabled) or a safe fallback.
+        if isinstance(student_engine, MissingStudentEngine):
+            if self.teacher is not None:
+                try:
+                    t1 = _now_ms()
+                    teacher_out = self.teacher.compare(pil_a, pil_b, prompt)
+                    dt_teacher = _now_ms() - t1
+                    winner_t = str(teacher_out.get("winner", "tie"))
+                    conf_t = float(clamp(float(teacher_out.get("confidence", 0.0)), 0.0, 1.0))
+                    agg = teacher_out.get("structured", {}).get("aggregate", {})
+                    score_a_t = float(clamp(float(agg.get("A", {}).get("score", 0.5)), 0.0, 1.0))
+                    score_b_t = float(clamp(float(agg.get("B", {}).get("score", 0.5)), 0.0, 1.0))
+                    winner_t, conf_t = _coerce_teacher_winner_and_confidence(
+                        score_a=score_a_t,
+                        score_b=score_b_t,
+                        winner=winner_t,
+                        confidence=conf_t,
+                        tie_threshold=tie_threshold,
+                    )
+                    explanation = str(teacher_out.get("explanation", "")).strip()
+                    out = {
+                        "winner": winner_t,
+                        "confidence": float(conf_t),
+                        "scoreA": float(score_a_t),
+                        "scoreB": float(score_b_t),
+                        "method": "teacher",
+                        "reasoning": explanation,
+                        "timing_ms": {"student": 0.0, "teacher": float(dt_teacher), "total": float(dt_teacher)},
+                        "scores": {"structured": teacher_out.get("structured", {}), "vlm": teacher_out.get("vlm", {})},
+                    }
+                    if return_debug:
+                        out["_debug"] = {
+                            "student_variant": student_variant,
+                            "student_checkpoint": student_checkpoint,
+                            "student_winner": None,
+                            "teacher_winner": winner_t,
+                            "agreement": None,
+                            "used_teacher": True,
+                            "error": "student_checkpoint_missing",
+                        }
+                    return out
+                except Exception as e2:
+                    logger.warning("event=teacher_infer_failed err=%s", e2)
+
+            out = {
+                "winner": "tie",
+                "confidence": 0.0,
+                "scoreA": 0.5,
+                "scoreB": 0.5,
+                "method": "safe_fallback",
+                "timing_ms": {"student": 0.0, "teacher": 0.0, "total": 0.0},
+            }
+            if return_debug:
+                out["_debug"] = {
+                    "student_variant": student_variant,
+                    "student_checkpoint": student_checkpoint,
+                    "student_winner": None,
+                    "teacher_winner": None,
+                    "agreement": None,
+                    "used_teacher": False,
+                    "error": "student_checkpoint_missing",
+                }
+            return out
+
         try:
             t0 = _now_ms()
             score_a_s, score_b_s, conf_s, winner_s = student_engine.compare(pil_a, pil_b, prompt)
@@ -456,13 +659,23 @@ class InferenceRuntime:
                     agg = teacher_out.get("structured", {}).get("aggregate", {})
                     score_a_t = float(clamp(float(agg.get("A", {}).get("score", 0.5)), 0.0, 1.0))
                     score_b_t = float(clamp(float(agg.get("B", {}).get("score", 0.5)), 0.0, 1.0))
+                    winner_t, conf_t = _coerce_teacher_winner_and_confidence(
+                        score_a=score_a_t,
+                        score_b=score_b_t,
+                        winner=winner_t,
+                        confidence=conf_t,
+                        tie_threshold=tie_threshold,
+                    )
+                    explanation = str(teacher_out.get("explanation", "")).strip()
                     out = {
                         "winner": winner_t,
                         "confidence": float(conf_t),
                         "scoreA": float(score_a_t),
                         "scoreB": float(score_b_t),
                         "method": "teacher",
+                        "reasoning": explanation,
                         "timing_ms": {"student": 0.0, "teacher": float(dt_teacher), "total": float(dt_teacher)},
+                        "scores": {"structured": teacher_out.get("structured", {}), "vlm": teacher_out.get("vlm", {})},
                     }
                     if return_debug:
                         out["_debug"] = {
@@ -580,6 +793,13 @@ class InferenceRuntime:
             score_b_t = 0.5
         conf_t = float(clamp(float(teacher_out.get("confidence", 0.0)), 0.0, 1.0))
         winner_t = str(teacher_out.get("winner", "tie"))
+        winner_t, conf_t = _coerce_teacher_winner_and_confidence(
+            score_a=score_a_t,
+            score_b=score_b_t,
+            winner=winner_t,
+            confidence=conf_t,
+            tie_threshold=tie_threshold,
+        )
 
         if hybrid_combine:
             score_a = float(clamp(w_s * score_a_s + w_t * score_a_t, 0.0, 1.0))
@@ -695,6 +915,13 @@ class InferenceRuntime:
             logger.warning("event=image_resolve_failed err=%s", e)
             return {"score": 0.5, "confidence": 0.0, "timing_ms": 0.0, "_debug": {"error": "image_resolve_failed"}}
         student_engine, student_variant = self._choose_student()
+        if isinstance(student_engine, MissingStudentEngine):
+            return {
+                "score": 0.5,
+                "confidence": 0.0,
+                "timing_ms": 0.0,
+                "_debug": {"student_variant": student_variant, "error": "student_checkpoint_missing"},
+            }
         try:
             t0 = _now_ms()
             score, confidence = student_engine.score(pil, prompt)

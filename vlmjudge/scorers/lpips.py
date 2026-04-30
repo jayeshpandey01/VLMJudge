@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: LPIPS scorer.
+
 """
 LPIPS scorer.
 
@@ -113,6 +116,17 @@ class LPIPSScorer(BaseScorer):
         pil_b = self._load_pil(image_b)
         if pil_a is None or pil_b is None:
             return self._fallback()
+
+        # LPIPS requires both tensors to have identical HxW. If inputs differ,
+        # resize both to a shared size to avoid runtime shape errors.
+        if pil_a.size != pil_b.size:
+            target_w = min(int(pil_a.size[0]), int(pil_b.size[0]))
+            target_h = min(int(pil_a.size[1]), int(pil_b.size[1]))
+            if target_w < 8 or target_h < 8:
+                return self._fallback()
+            resampling = getattr(getattr(Image, "Resampling", Image), "BICUBIC")
+            pil_a = pil_a.resize((target_w, target_h), resample=resampling)
+            pil_b = pil_b.resize((target_w, target_h), resample=resampling)
 
         try:
             import torch

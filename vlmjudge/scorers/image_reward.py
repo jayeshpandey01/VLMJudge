@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: ImageReward scorer wrapper.
+
 """
 ImageReward scorer wrapper.
 

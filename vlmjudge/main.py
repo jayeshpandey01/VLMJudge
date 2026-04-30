@@ -1,7 +1,6 @@
 """
-Module entrypoint for the modular `vlmjudge` package.
-
-This is intentionally a small CLI to validate that the architecture works end-to-end.
+author: Jayesh Pandey
+summary: Modular entrypoint for vlmjudge, providing CLI for scoring and comparing images with multi-scorer support and VLM fusion.
 """
 
 from __future__ import annotations
@@ -91,7 +90,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         pipeline = ComparePipeline(
             scorers,
             config=ComparePipelineConfig(threshold=float(args.threshold), vlm_runs=int(args.vlm_runs)),
-            vlm_ensemble=vlm_ensemble,
+            vlm_judge=vlm_ensemble,
         )
 
         outputs = []
@@ -153,7 +152,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         pipeline = ComparePipeline(
             scorers,
             config=ComparePipelineConfig(threshold=float(args.threshold), vlm_runs=int(args.vlm_runs)),
-            vlm_ensemble=vlm_ensemble,
+            vlm_judge=vlm_ensemble,
         )
         result = pipeline.run(args.image, args.image_b, args.prompt)
         print(json.dumps(result, indent=2, sort_keys=True))

@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Vision-language judge modules (local models, no external APIs).
+
 """Vision-language judge modules (local models, no external APIs)."""
 
 from __future__ import annotations

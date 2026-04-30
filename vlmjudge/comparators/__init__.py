@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Comparators: pairwise image comparison interfaces (logic not implemented in Phase 1).
+
 """Comparators: pairwise image comparison interfaces (logic not implemented in Phase 1)."""
 
 from __future__ import annotations

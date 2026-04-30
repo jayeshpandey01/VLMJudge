@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Multi-image ranking.
+
 """
 Multi-image ranking.
 

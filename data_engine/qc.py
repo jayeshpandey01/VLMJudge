@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Lightweight wrapper around existing QC filtering.
+
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Mapping, Optional

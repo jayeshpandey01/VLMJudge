@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Distilled Reward Model Scorer.
+
 """
 Distilled Reward Model Scorer.
 

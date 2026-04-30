@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Docker configuration for containerizing the application.
+
 FROM python:3.10-slim
 
 WORKDIR /app

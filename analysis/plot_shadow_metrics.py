@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Source file for plot_shadow_metrics.py in the analysis module.
+
 from __future__ import annotations
 
 import argparse

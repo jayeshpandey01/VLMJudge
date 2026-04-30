@@ -1,8 +1,6 @@
 """
-Compare pipeline integration.
-
-Orchestrates:
-  comparator -> explanation -> dataset builder
+author: Jayesh Pandey
+summary: Orchestrates the image comparison pipeline, integrating multiple scorers and VLM-based fusion judging with confidence calibration.
 """
 
 from __future__ import annotations

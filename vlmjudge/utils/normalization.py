@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Score normalization utilities.
+
 """
 Score normalization utilities.
 

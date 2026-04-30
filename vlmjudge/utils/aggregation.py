@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Score aggregation utilities (prep for Phase 3).
+
 """
 Score aggregation utilities (prep for Phase 3).
 

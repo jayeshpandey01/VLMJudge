@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Simple example script demonstrating ImageReward model usage for ranking and scoring images.
+"""
+
 import os
 import torch
 import ImageReward as RM

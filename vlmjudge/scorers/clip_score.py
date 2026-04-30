@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: OpenCLIP-based scorer.
+
 """
 OpenCLIP-based scorer.
 

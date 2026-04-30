@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Dataset quality control utilities.
+
 """
 Dataset quality control utilities.
 

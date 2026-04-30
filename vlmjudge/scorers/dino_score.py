@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Optional DINOv2 scorer.
+
 """
 Optional DINOv2 scorer.
 

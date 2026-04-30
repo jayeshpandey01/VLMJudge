@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Basic explanation generator (no external APIs).
+
 """
 Basic explanation generator (no external APIs).
 

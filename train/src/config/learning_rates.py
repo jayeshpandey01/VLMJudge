@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: PyTorch DataLoader for TFRecords
+
 '''
 @File       :   learning_rates.py
 @Time       :   2023/02/09 20:47:00

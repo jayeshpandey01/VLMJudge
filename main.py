@@ -1,10 +1,6 @@
 """
-Repository entrypoint.
-
-Kept at the repo root so it can be run as:
-    python main.py --image path --prompt "text"
-
-This is additive and does not change legacy `ImageReward` behavior.
+author: Jayesh Pandey
+summary: Repository entrypoint for VLMJudge, delegating to the modular vlmjudge.main function.
 """
 
 from __future__ import annotations

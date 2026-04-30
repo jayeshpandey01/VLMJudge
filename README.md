@@ -1,3 +1,8 @@
+---
+name: Jayesh Pandey
+summary: Project documentation and setup instructions.
+---
+
 # VLMJudge
 ### A Multimodal Evaluation and Reasoning Framework for Image Preference Learning
 

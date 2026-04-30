@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: FastAPI application for VLMJudge, providing endpoints for scoring, comparison, and feedback.
+"""
+
 from __future__ import annotations
 
 import json
@@ -9,6 +14,7 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -72,6 +78,25 @@ def create_app(*, config_path: str = "config.yaml") -> FastAPI:
         yield
 
     app = FastAPI(title="VLMJudge API", version="1.0.0", lifespan=lifespan)
+
+    cors_env = os.getenv("VLMJUDGE_CORS_ORIGINS", "").strip()
+    if cors_env:
+        origins = [o.strip() for o in cors_env.split(",") if o.strip()]
+    else:
+        origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.middleware("http")
     async def log_requests(request: Request, call_next):

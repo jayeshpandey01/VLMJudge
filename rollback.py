@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Utility script to roll back the active model to a specified previous version in the registry.
+"""
+
 from __future__ import annotations
 
 import argparse

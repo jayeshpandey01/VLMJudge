@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Pipelines: orchestration layers for multi-step scoring/comparison workflows.
+
 """Pipelines: orchestration layers for multi-step scoring/comparison workflows."""
 
 from __future__ import annotations

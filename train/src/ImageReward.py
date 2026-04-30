@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Source file for ImageReward.py in the src module.
+
 '''
 @File       :   ImageReward.py
 @Time       :   2023/02/28 19:53:00

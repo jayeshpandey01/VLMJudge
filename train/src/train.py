@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Source file for train.py in the src module.
+
 '''
 @File       :   train.py
 @Time       :   2023/02/04 10:51:00

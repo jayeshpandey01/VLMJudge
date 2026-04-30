@@ -1,15 +1,7 @@
-'''
-@File       :   utils.py
-@Time       :   2023/04/05 19:18:00
-@Auther     :   Jiazheng Xu
-@Contact    :   xjz22@mails.tsinghua.edu.cn
-* Based on CLIP code base
-* https://github.com/openai/CLIP
-* Checkpoint of CLIP/BLIP/Aesthetic are from:
-* https://github.com/openai/CLIP
-* https://github.com/salesforce/BLIP
-* https://github.com/christophschuhmann/improved-aesthetic-predictor
-'''
+"""
+author: Jayesh Pandey
+summary: Utility functions for downloading and loading ImageReward models and auxiliary scorers (CLIP, BLIP, Aesthetic).
+"""
 
 import hashlib
 import os

@@ -1,11 +1,7 @@
-'''
-@File       :   ReFL_SDXL.py
-@Description:   ReFL Algorithm using StableDiffusionXLPipeline.
-* Based on diffusers code base
-* https://github.com/huggingface/diffusers/blob/main/examples/text_to_image/train_text_to_image_sdxl.py
-'''
-
-"""Fine-tuning script for Stable Diffusion XL for text2image."""
+"""
+author: Jayesh Pandey
+summary: Fine-tuning script for Stable Diffusion XL (SDXL) using the ReFL algorithm for text-to-image generation optimization.
+"""
 
 import argparse
 import functools

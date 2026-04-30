@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Source file for make_dataset.py in the src module.
+
 
 import os
 import json

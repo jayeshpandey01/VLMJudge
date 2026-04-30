@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Source file for options.py in the config module.
+
 '''
 @File       :   options.py
 @Time       :   2023/01/09 23:01:00

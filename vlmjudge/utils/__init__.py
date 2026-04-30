@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Utility helpers shared across the modular `vlmjudge` package.
+
 """Utility helpers shared across the modular `vlmjudge` package."""
 
 from __future__ import annotations

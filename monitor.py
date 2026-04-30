@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Monitoring dashboard script that analyzes logs for performance statistics, trends, and warnings.
+"""
+
 from __future__ import annotations
 
 import argparse

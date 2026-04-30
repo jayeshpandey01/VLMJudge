@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Aesthetic scorer (LAION-style aesthetic predictor or equivalent).
+
 """
 Aesthetic scorer (LAION-style aesthetic predictor or equivalent).
 

@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Implements the continuous learning loop, handling data selection, model retraining, and safe promotion of new models.
+"""
+
 from __future__ import annotations
 
 import argparse

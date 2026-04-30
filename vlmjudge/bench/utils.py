@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Normalize various dataset shapes into:
+
 from __future__ import annotations
 
 import json

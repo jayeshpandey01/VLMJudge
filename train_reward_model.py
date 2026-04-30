@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Core training script for the distilled student reward model, defining the dataset, architecture, and training loop.
+"""
+
 import os
 import json
 import torch

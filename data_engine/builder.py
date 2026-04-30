@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Convert selected API logs into Phase-5 style preference records.
+
 from __future__ import annotations
 
 from dataclasses import dataclass

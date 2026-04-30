@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Pairwise comparison engine.
+
 """
 Pairwise comparison engine.
 

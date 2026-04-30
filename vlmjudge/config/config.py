@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Simple config system.
+
 """
 Simple config system.
 

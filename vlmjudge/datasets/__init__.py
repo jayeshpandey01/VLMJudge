@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Dataset utilities for generating training-ready preference data.
+
 """Dataset utilities for generating training-ready preference data."""
 
 from __future__ import annotations

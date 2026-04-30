@@ -1,3 +1,8 @@
+"""
+author: Jayesh Pandey
+summary: Evaluates a distilled reward model on a validation split, computing accuracy, agreement, and calibration metrics.
+"""
+
 import argparse
 import json
 import os

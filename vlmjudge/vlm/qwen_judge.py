@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: VLM Judge module using Qwen2.5-VL for reasoning-based image comparison.
+
 """
 VLM Judge module using Qwen2.5-VL for reasoning-based image comparison.
 """

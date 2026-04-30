@@ -1,12 +1,7 @@
-'''
-@File       :   ReFL.py
-@Time       :   2023/05/01 19:36:00
-@Auther     :   Jiazheng Xu
-@Contact    :   xjz22@mails.tsinghua.edu.cn
-@Description:   ReFL Algorithm.
-* Based on diffusers code base
-* https://github.com/huggingface/diffusers/blob/main/examples/text_to_image/train_text_to_image.py
-'''
+"""
+author: Jayesh Pandey
+summary: Implementation of the Reward-Feedback Learning (ReFL) algorithm for fine-tuning diffusion models based on reward model feedback.
+"""
 
 import argparse
 import logging

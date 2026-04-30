@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Scorers: prompt-conditioned image scoring backends (reward models, metrics, etc.).
+
 """Scorers: prompt-conditioned image scoring backends (reward models, metrics, etc.)."""
 
 from __future__ import annotations

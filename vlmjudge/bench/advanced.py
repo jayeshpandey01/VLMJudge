@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Bootstrap the mean over `values` using sampling with replacement.
+
 from __future__ import annotations
 
 import random

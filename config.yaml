@@ -1,3 +1,6 @@
+# Name: Jayesh Pandey
+# Summary: Main configuration file for model parameters, deployment modes, and runtime settings.
+
 device: null  # null => auto ("cuda" if available else "cpu")
 
 # Deployment

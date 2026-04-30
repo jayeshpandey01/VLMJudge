@@ -1,7 +1,6 @@
 """
-Multi-VLM Ensemble.
-
-Integrates multiple VLMs and provides reasoning aggregation.
+author: Jayesh Pandey
+summary: Implements a multi-VLM ensemble judge that aggregates decisions from multiple vision-language models using confidence-weighted voting and reasoning fusion.
 """
 
 from __future__ import annotations
